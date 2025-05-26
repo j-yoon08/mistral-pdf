@@ -1,0 +1,213 @@
+# PDF OCR 웹 서비스 - 라즈베리파이 배포 가이드
+
+===============================================
+1. 라즈베리파이 준비
+===============================================
+
+# 라즈베리파이 OS 업데이트
+sudo apt update && sudo apt upgrade -y
+
+# 필요한 시스템 패키지 설치
+sudo apt install python3 python3-pip python3-venv git nginx -y
+
+===============================================
+2. 프로젝트 클론 및 설정
+===============================================
+
+# 프로젝트 디렉토리 생성
+cd /home/pi
+git clone <your-repository-url> pdf-ocr
+cd pdf-ocr
+
+# 가상환경 생성 및 활성화
+python3 -m venv venv
+source venv/bin/activate
+
+# 의존성 설치
+pip install -r requirements.txt
+
+===============================================
+3. 환경 변수 설정
+===============================================
+
+# .env 파일 생성
+nano .env
+
+# .env 파일 내용:
+MISTRAL_API_KEY=your_mistral_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+FLASK_HOST=0.0.0.0
+FLASK_PORT=5000
+FLASK_DEBUG=False
+UPLOAD_FOLDER=uploads
+OUTPUT_FOLDER=output
+
+===============================================
+4. Systemd 서비스 설정
+===============================================
+
+# 서비스 파일 생성
+sudo nano /etc/systemd/system/pdf-ocr.service
+
+# 서비스 파일 내용:
+[Unit]
+Description=PDF OCR Web Service
+After=network.target
+
+[Service]
+Type=exec
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/pdf-ocr
+Environment=PATH=/home/pi/pdf-ocr/venv/bin
+ExecStart=/home/pi/pdf-ocr/venv/bin/gunicorn --bind 127.0.0.1:5000 --workers 2 --timeout 300 app:app
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+===============================================
+5. Nginx 리버스 프록시 설정
+===============================================
+
+# Nginx 설정 파일 생성
+sudo nano /etc/nginx/sites-available/pdf-ocr
+
+# Nginx 설정 내용:
+server {
+    listen 80;
+    server_name your_raspberry_pi_ip_or_domain;
+    
+    client_max_body_size 100M;
+    
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300;
+        proxy_connect_timeout 300;
+        proxy_send_timeout 300;
+    }
+    
+    location /static {
+        alias /home/pi/pdf-ocr/static;
+        expires 30d;
+    }
+}
+
+# 사이트 활성화
+sudo ln -s /etc/nginx/sites-available/pdf-ocr /etc/nginx/sites-enabled/
+sudo rm /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl restart nginx
+
+===============================================
+6. 서비스 시작 및 활성화
+===============================================
+
+# 서비스 활성화 및 시작
+sudo systemctl daemon-reload
+sudo systemctl enable pdf-ocr
+sudo systemctl start pdf-ocr
+
+# 상태 확인
+sudo systemctl status pdf-ocr
+
+===============================================
+7. 방화벽 설정 (선택사항)
+===============================================
+
+# UFW 설치 및 설정
+sudo apt install ufw -y
+sudo ufw allow ssh
+sudo ufw allow 80
+sudo ufw allow 443  # HTTPS용 (나중에 SSL 설정 시)
+sudo ufw enable
+
+===============================================
+8. 라즈베리파이 최적화 팁
+===============================================
+
+1. 메모리 분할 조정:
+   sudo raspi-config
+   # Advanced Options > Memory Split > GPU 메모리를 16으로 설정
+
+2. 스왑 파일 크기 증가 (필요시):
+   sudo dphys-swapfile swapoff
+   sudo nano /etc/dphys-swapfile
+   # CONF_SWAPSIZE=1024로 변경
+   sudo dphys-swapfile setup
+   sudo dphys-swapfile swapon
+
+===============================================
+9. SSL 인증서 설정 (선택사항)
+===============================================
+
+# Let's Encrypt를 사용한 HTTPS 설정
+sudo apt install certbot python3-certbot-nginx -y
+sudo certbot --nginx -d your_domain.com
+
+===============================================
+10. 모니터링 및 로그
+===============================================
+
+# 서비스 로그 확인
+sudo journalctl -u pdf-ocr -f
+
+# Nginx 로그 확인
+sudo tail -f /var/log/nginx/access.log
+sudo tail -f /var/log/nginx/error.log
+
+===============================================
+11. 파일 정리 자동화 (크론잡)
+===============================================
+
+# 크론잡 설정
+crontab -e
+
+# 매일 자정에 7일 이상 된 파일 삭제
+0 0 * * * find /home/pi/pdf-ocr/uploads -type f -mtime +7 -delete
+0 0 * * * find /home/pi/pdf-ocr/output -type f -mtime +7 -delete
+
+===============================================
+주의사항
+===============================================
+
+1. 성능: 라즈베리파이는 제한된 리소스를 가지므로, 대용량 PDF나 
+   동시 사용자가 많을 경우 처리 시간이 길어질 수 있습니다.
+
+2. 저장공간: uploads와 output 폴더의 정기적인 정리가 필요합니다.
+
+3. API 키 보안: .env 파일의 권한을 적절히 설정하세요:
+   chmod 600 .env
+
+4. 라즈베리파이 IP 주소나 도메인으로 웹 서비스에 접근 가능합니다.
+
+===============================================
+문제 해결
+===============================================
+
+서비스가 시작되지 않는 경우:
+- sudo journalctl -u pdf-ocr --no-pager
+- 가상환경 경로 확인
+- 권한 문제 확인 (chown -R pi:pi /home/pi/pdf-ocr)
+
+Nginx 오류:
+- sudo nginx -t로 설정 파일 검증
+- sudo systemctl status nginx로 상태 확인
+
+메모리 부족:
+- 스왑 파일 크기 증가
+- workers 수 줄이기 (gunicorn --workers 1)
+
+===============================================
+완료!
+===============================================
+
+설정이 완료되면 브라우저에서 라즈베리파이의 IP 주소로 접속하여
+PDF OCR 웹 서비스를 사용할 수 있습니다.
+
+예: http://192.168.1.100 (라즈베리파이 IP) 

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PDF OCR → 마크다운 변환</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-['Inter','Apple_SD_Gothic_Neo',Arial,sans-serif]">
+  <!-- 헤더 -->
+  <header class="w-full flex items-center justify-between px-4 md:px-10 h-16 bg-white shadow-sm fixed top-0 left-0 z-50">
+    <div class="flex items-center gap-3 text-blue-600 font-extrabold text-xl">
+      <i class="fas fa-file-pdf"></i> AI PDF 마크다운 변환 프로그램
+    </div>
+    <nav class="flex items-center gap-6 text-sm">
+      <a href="https://console.mistral.ai/api-keys" target="_blank" class="text-blue-600 font-semibold hover:underline">API 키 발급</a>
+      <a href="#" id="help-btn" class="text-gray-400 hover:text-blue-600">도움말</a>
+      <a href="#" id="settings-btn" class="text-gray-400 hover:text-blue-600"><i class="fas fa-cog"></i></a>
+    </nav>
+  </header>
+  <!-- 도움말 모달 -->
+  <div id="help-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 hidden">
+    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg flex flex-col gap-6 relative">
+      <button id="close-help" class="absolute top-4 right-4 text-gray-400 hover:text-blue-600 text-2xl"><i class="fas fa-times"></i></button>
+      <h2 class="font-bold text-blue-600 text-xl flex items-center gap-2 mb-2"><i class="fas fa-question-circle"></i> 도움말</h2>
+      <div class="text-gray-700 text-base flex flex-col gap-2">
+        <b>PDF → 마크다운 변환기 사용법</b>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>상단 <b>설정</b>에서 Mistral/OpenAI API 키를 입력하세요.</li>
+          <li>PDF 파일을 업로드하고, 필요시 <b>OpenAI 맞춤법 교정</b>을 체크하세요.</li>
+          <li>변환 결과는 <b>ZIP</b>으로 다운로드하거나, <b>미리보기</b>에서 확인할 수 있습니다.</li>
+        </ul>
+        <b>자주 묻는 질문</b>
+        <ul class="list-disc pl-5 space-y-1">
+          <li><b>API 키는 안전한가요?</b> 키는 브라우저에만 저장되며 서버로 전송되지 않습니다.</li>
+          <li><b>OpenAI 키는 꼭 필요한가요?</b> 맞춤법 교정에만 필요하며, 미입력 시 교정 없이 변환됩니다.</li>
+          <li><b>이미지 추출도 되나요?</b> PDF 내 이미지도 함께 추출되어 미리보기에서 확인할 수 있습니다.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <!-- 설정 모달 -->
+  <div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 hidden">
+    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md flex flex-col gap-6 relative">
+      <button id="close-settings" class="absolute top-4 right-4 text-gray-400 hover:text-blue-600 text-2xl"><i class="fas fa-times"></i></button>
+      <h2 class="font-bold text-blue-600 text-xl flex items-center gap-2 mb-2"><i class="fas fa-key"></i> API 키 설정</h2>
+      <div class="flex flex-col gap-4">
+        <label for="modal-api-key" class="font-semibold text-gray-700 flex items-center gap-2"><i class="fas fa-key"></i> Mistral API 키</label>
+        <input type="password" id="modal-api-key" placeholder="Mistral API 키 입력" class="px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 text-base" />
+        <label for="modal-openai-key" class="font-semibold text-gray-700 flex items-center gap-2 mt-4"><i class="fas fa-robot"></i> OpenAI API 키</label>
+        <input type="password" id="modal-openai-key" placeholder="OpenAI API 키 입력 (선택)" class="px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 text-base" />
+      </div>
+      <button id="save-api-key" class="w-full bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold py-3 rounded-xl text-lg flex items-center justify-center gap-2 hover:from-blue-600 hover:to-blue-800 transition">
+        <i class="fas fa-save"></i> 저장
+      </button>
+    </div>
+  </div>
+  <main class="pt-20 pb-8 px-2 md:px-8 max-w-7xl mx-auto flex flex-col gap-8">
+    <!-- 상단 카드 2개 -->
+    <div class="flex flex-col md:flex-row gap-4 w-full">
+      <section class="flex-1 bg-white rounded-2xl shadow p-6 flex flex-col gap-2 min-w-0">
+        <h2 class="font-bold text-blue-600 text-lg flex items-center gap-2 mb-2"><i class="fas fa-info-circle"></i> 사용 가이드</h2>
+        <ul class="text-gray-500 text-base list-disc pl-5 space-y-1">
+          <li>PDF 파일을 업로드하세요.</li>
+          <li>변환 결과는 ZIP으로 다운로드할 수 있습니다.</li>
+        </ul>
+      </section>
+    </div>
+    <!-- 메인 2단 -->
+    <div class="flex flex-col lg:flex-row gap-8 w-full">
+      <!-- 왼쪽 -->
+      <section class="flex-1 flex flex-col gap-8 min-w-0">
+        <!-- PDF 업로드 및 옵션 -->
+        <div class="bg-white rounded-2xl shadow p-8 flex flex-col gap-6 min-w-0">
+          <h2 class="font-bold text-blue-600 text-lg flex items-center gap-2 mb-4"><i class="fas fa-upload"></i> PDF 업로드 및 옵션</h2>
+          <form id="ocr-form" autocomplete="off" class="flex flex-col gap-6">
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="use_openai" name="use_openai" value="true" checked class="w-5 h-5">
+                <label for="use_openai" class="font-semibold text-gray-700 flex items-center gap-1"><i class="fas fa-spell-check"></i> OpenAI 맞춤법 교정</label>
+              </div>
+            </div>
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+              <label for="pdf-files" class="font-semibold text-gray-700 flex items-center gap-2"><i class="fas fa-file-upload"></i> PDF 파일</label>
+              <label for="pdf-files" class="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold cursor-pointer hover:bg-blue-700 transition"><i class="fas fa-paperclip"></i> 파일 선택</label>
+              <input type="file" id="pdf-files" name="pdf_files" accept=".pdf" multiple class="hidden">
+              <span id="file-names" class="text-gray-400 text-base ml-2">선택된 파일 없음</span>
+            </div>
+            <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold py-4 rounded-xl text-lg flex items-center justify-center gap-2 hover:from-blue-600 hover:to-blue-800 transition">
+              <i class="fas fa-magic"></i> 변환 시작
+            </button>
+          </form>
+        </div>
+        <!-- 상태 -->
+        <div class="bg-white rounded-2xl shadow p-6 flex flex-col gap-2 min-w-0">
+          <h2 class="font-bold text-blue-600 text-lg flex items-center gap-2 mb-2"><i class="fas fa-tasks"></i> 상태</h2>
+          <pre id="status-log" class="bg-gray-50 rounded-lg p-4 text-gray-700 text-base overflow-x-auto">준비 완료. PDF를 선택하고 변환을 시작하세요.</pre>
+          <div class="loader" id="loader" style="display: none;"></div>
+        </div>
+      </section>
+      <!-- 오른쪽 -->
+      <section class="flex-1 flex flex-col gap-8 min-w-0">
+        <div class="bg-white rounded-2xl shadow p-6 flex flex-col gap-2 min-w-0" id="results-area" style="display: none;">
+          <h2 class="font-bold text-blue-600 text-lg flex items-center gap-2 mb-2"><i class="fas fa-download"></i> 결과 다운로드</h2>
+          <ul id="download-links" class="mt-2"></ul>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-6 flex flex-col gap-2 min-w-0" id="preview-area" style="display: none;">
+          <h2 class="font-bold text-blue-600 text-lg flex items-center gap-2 mb-2"><i class="fas fa-eye"></i> 미리보기</h2>
+          <div id="preview-content" class="mt-2"></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-6 flex flex-col gap-2 min-w-0" id="error-area" style="display: none;">
+          <h2 class="font-bold text-red-500 text-lg flex items-center gap-2 mb-2"><i class="fas fa-exclamation-circle"></i> 오류</h2>
+          <pre id="error-message" class="bg-gray-50 rounded-lg p-4 text-red-500 text-base overflow-x-auto"></pre>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 도움말 모달 동작
+    const helpBtn = document.getElementById('help-btn');
+    const helpModal = document.getElementById('help-modal');
+    const closeHelp = document.getElementById('close-help');
+    helpBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      helpModal.classList.remove('hidden');
+    });
+    closeHelp.addEventListener('click', function() {
+      helpModal.classList.add('hidden');
+    });
+    // 설정 모달 동작
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettings = document.getElementById('close-settings');
+    const saveApiKey = document.getElementById('save-api-key');
+    const modalApiKey = document.getElementById('modal-api-key');
+    const modalOpenaiKey = document.getElementById('modal-openai-key');
+    // 로컬스토리지에서 불러오기
+    if (localStorage.getItem('mistral_api_key')) {
+      modalApiKey.value = localStorage.getItem('mistral_api_key');
+    }
+    if (localStorage.getItem('openai_api_key')) {
+      modalOpenaiKey.value = localStorage.getItem('openai_api_key');
+    }
+    settingsBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      settingsModal.classList.remove('hidden');
+    });
+    closeSettings.addEventListener('click', function() {
+      settingsModal.classList.add('hidden');
+    });
+    saveApiKey.addEventListener('click', function() {
+      localStorage.setItem('mistral_api_key', modalApiKey.value);
+      localStorage.setItem('openai_api_key', modalOpenaiKey.value);
+      settingsModal.classList.add('hidden');
+    });
+    // 기존 파일명 표시 스크립트
+    const fileInput = document.getElementById('pdf-files');
+    const fileNames = document.getElementById('file-names');
+    if (fileInput && fileNames) {
+      fileInput.addEventListener('change', function() {
+        if (fileInput.files.length === 0) {
+          fileNames.textContent = '선택된 파일 없음';
+        } else if (fileInput.files.length === 1) {
+          fileNames.textContent = fileInput.files[0].name;
+        } else {
+          fileNames.textContent = fileInput.files.length + '개 파일 선택됨';
+        }
+      });
+    }
+  });
+  </script>
+</body>
+</html>
