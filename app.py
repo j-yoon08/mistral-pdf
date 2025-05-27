@@ -12,6 +12,8 @@ from mistralai.models import OCRResponse
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from openai import OpenAI
+import socket
+import requests
 
 load_dotenv()
 
@@ -456,7 +458,29 @@ def download_file(session_id, filename):
         return f"다운로드 중 오류 발생: {str(e)}", 500
 
 if __name__ == '__main__':
-     host = os.getenv('FLASK_HOST', '127.0.0.1')
+     host = os.getenv('FLASK_HOST', '0.0.0.0')
      port = int(os.getenv('FLASK_PORT', 5001))
      debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
+
+     # 내부 IP(로컬 IP) 구하기
+     try:
+         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+         s.connect(('8.8.8.8', 80))
+         local_ip = s.getsockname()[0]
+         s.close()
+     except Exception:
+         local_ip = '127.0.0.1'
+
+     # 외부 IP(공인 IP) 구하기
+     try:
+         external_ip = requests.get('https://ifconfig.me', timeout=2).text.strip()
+     except Exception:
+         external_ip = '(확인 실패)'
+
+     print('\n[접속 안내]')
+     print(f'- 내부(로컬) IP: http://{local_ip}:{port}')
+     print(f'- 외부(공인) IP: http://{external_ip}:{port}')
+     print('같은 네트워크의 다른 기기에서 위 주소로 접속하세요!')
+     print('외부(공인) IP는 라우터 포트포워딩/방화벽 설정이 필요합니다.')
+
      app.run(host=host, port=port, debug=debug_mode)
