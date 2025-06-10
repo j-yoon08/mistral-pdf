@@ -25,17 +25,18 @@ else:
     print("API 키가 .env에서 로드되지 않음. .env 파일과 설정을 확인하세요.")
 print("--- 디버그 종료 ---")
 
+# app.py 파일 위치 기준으로 output, uploads 폴더 생성
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = Path(os.path.join(BASE_DIR, 'uploads'))
+OUTPUT_FOLDER = Path(os.path.join(BASE_DIR, 'output'))
+UPLOAD_FOLDER.mkdir(exist_ok=True)
+OUTPUT_FOLDER.mkdir(exist_ok=True)
 
 app = Flask(__name__)
 
 # --- 설정 ---
-UPLOAD_FOLDER = Path(os.getenv('UPLOAD_FOLDER', 'uploads'))
-OUTPUT_FOLDER = Path(os.getenv('OUTPUT_FOLDER', 'output'))
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 ALLOWED_EXTENSIONS = {'pdf'}
-
-UPLOAD_FOLDER.mkdir(exist_ok=True)
-OUTPUT_FOLDER.mkdir(exist_ok=True)
 
 # --- 헬퍼 함수 ---
 
