@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Create the TOGGLE element ---
         const toggleButton = document.createElement('div');
         toggleButton.classList.add('preview-toggle');
-        toggleButton.textContent = '';
+        toggleButton.innerHTML = `<span>📄 ${resultItem.original_filename} 미리보기</span>`;
         previewContainer.appendChild(toggleButton);
 
         // --- Create the INNER CONTENT div (that will be shown/hidden) ---
@@ -168,10 +168,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     resultsArea.style.display = 'block';
                     result.results.forEach(item => {
                         const li = document.createElement('li');
-                        const link = document.createElement('a');
-                        link.href = item.download_url;
-                        link.textContent = `${item.zip_filename} 다운로드`;
-                        li.appendChild(link);
+                        
+                        // 새로운 카드 스타일 구조
+                        const downloadInfo = document.createElement('div');
+                        downloadInfo.className = 'download-info';
+                        
+                        const downloadTitle = document.createElement('div');
+                        downloadTitle.className = 'download-title';
+                        downloadTitle.innerHTML = `<i class="fas fa-file-archive"></i> ${item.original_filename}`;
+                        
+                        const downloadSubtitle = document.createElement('div');
+                        downloadSubtitle.className = 'download-subtitle';
+                        downloadSubtitle.textContent = `ZIP 파일 • ${item.zip_filename}`;
+                        
+                        downloadInfo.appendChild(downloadTitle);
+                        downloadInfo.appendChild(downloadSubtitle);
+                        
+                        const downloadBtn = document.createElement('a');
+                        downloadBtn.href = item.download_url;
+                        downloadBtn.className = 'download-btn';
+                        downloadBtn.innerHTML = '<i class="fas fa-download"></i> 다운로드';
+                        
+                        li.appendChild(downloadInfo);
+                        li.appendChild(downloadBtn);
                         downloadLinksList.appendChild(li);
 
                         renderPreview(item, sessionId);

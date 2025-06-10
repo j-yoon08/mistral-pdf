@@ -203,42 +203,233 @@ a:hover {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
 #download-links li {
-  background: #f4f7fa;
-  padding: 16px 20px;
-  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(49,130,246,0.05) 0%, rgba(37,99,235,0.08) 100%);
+  padding: 20px 24px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: box-shadow 0.2s, transform 0.1s;
-  border: 1px solid var(--border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(49,130,246,0.15);
+  position: relative;
+  overflow: hidden;
+}
+#download-links li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 #download-links li:hover {
-  box-shadow: 0 4px 16px 0 rgba(49,130,246,0.10);
-  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(49,130,246,0.08) 0%, rgba(37,99,235,0.12) 100%);
+  box-shadow: 0 8px 32px 0 rgba(49,130,246,0.15);
+  transform: translateY(-4px) scale(1.02);
+  border-color: rgba(49,130,246,0.25);
+}
+#download-links li:hover::before {
+  opacity: 1;
 }
 #download-links a {
   font-weight: 700;
   color: var(--primary);
-  font-size: 1.05em;
+  font-size: 1.1em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  flex: 1;
+  transition: color 0.2s ease;
+}
+#download-links a:hover {
+  color: var(--primary-dark);
+}
+#download-links .download-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+#download-links .download-title {
+  font-weight: 700;
+  color: var(--text-main);
+  font-size: 1.1em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#download-links .download-subtitle {
+  font-size: 0.9em;
+  color: var(--text-sub);
+  margin-left: 28px;
+}
+#download-links .download-btn {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95em;
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px 0 rgba(49,130,246,0.3);
+}
+#download-links .download-btn:hover {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px 0 rgba(49,130,246,0.4);
 }
 .preview-section {
   margin-top: 0;
 }
 #preview-content {
-  background: #f4f7fa;
+  background: linear-gradient(135deg, rgba(249,251,253,0.8) 0%, rgba(244,247,250,0.9) 100%);
   border-radius: 16px;
-  padding: 24px;
+  padding: 0;
   min-height: 200px;
-  max-height: 320px;
+  max-height: 480px;
   overflow-y: auto;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(49,130,246,0.1);
   font-size: 1.08em;
+}
+
+/* 미리보기 아이템 스타일 */
+.preview-item {
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: white;
+  border: 1px solid rgba(49,130,246,0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.preview-item:hover {
+  box-shadow: 0 8px 32px 0 rgba(49,130,246,0.12);
+  transform: translateY(-2px);
+}
+
+.preview-toggle {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 16px 24px;
+  cursor: pointer;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.preview-toggle::before {
+  content: '👁️';
+  font-size: 1.2em;
+}
+
+.preview-toggle::after {
+  content: '펼치기';
+  margin-left: auto;
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+.preview-item.collapsed .preview-toggle::after {
+  content: '펼치기';
+}
+
+.preview-item:not(.collapsed) .preview-toggle::after {
+  content: '접기';
+}
+
+.preview-toggle:hover {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+}
+
+.preview-content-inner {
+  padding: 24px;
+  background: white;
+  border-top: 1px solid rgba(49,130,246,0.1);
+}
+
+.preview-item.collapsed .preview-content-inner {
+  display: none;
+}
+
+.markdown-preview {
+  margin-bottom: 24px;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3 {
+  color: var(--text-main);
+  font-weight: 700;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.markdown-preview h1 {
+  font-size: 1.8em;
+  border-bottom: 2px solid rgba(49,130,246,0.2);
+  padding-bottom: 8px;
+}
+
+.markdown-preview h2 {
+  font-size: 1.5em;
+}
+
+.markdown-preview h3 {
+  font-size: 1.3em;
+}
+
+.markdown-preview p {
+  color: var(--text-main);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.markdown-preview img {
+  border-radius: 12px;
+  box-shadow: 0 4px 16px 0 rgba(0,0,0,0.1);
+  margin: 16px 0;
+  transition: transform 0.2s ease;
+}
+
+.markdown-preview img:hover {
+  transform: scale(1.02);
+}
+
+.image-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  background: rgba(249,251,253,0.5);
+  border-radius: 12px;
+  border: 1px dashed rgba(49,130,246,0.2);
+}
+
+.image-preview img {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.image-preview img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px 0 rgba(49,130,246,0.2);
 }
 #error-area {
   margin-top: 0;
@@ -354,6 +545,51 @@ a:hover {
   .card li {
     margin-bottom: 4px;
     word-break: break-all;
+  }
+  
+  /* 모바일에서 다운로드 카드 개선 */
+  #download-links li {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
+  
+  #download-links .download-info {
+    flex: none;
+  }
+  
+  #download-links .download-subtitle {
+    margin-left: 0;
+    font-size: 0.85em;
+  }
+  
+  #download-links .download-btn {
+    align-self: stretch;
+    justify-content: center;
+    padding: 12px 16px;
+    font-size: 1em;
+  }
+  
+  /* 모바일에서 미리보기 개선 */
+  .preview-toggle {
+    padding: 12px 16px;
+    font-size: 0.95em;
+  }
+  
+  .preview-content-inner {
+    padding: 16px;
+  }
+  
+  .image-preview {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    padding: 12px;
+  }
+  
+  .markdown-preview img {
+    max-width: 100%;
+    height: auto;
   }
 }
   

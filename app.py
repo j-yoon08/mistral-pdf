@@ -347,10 +347,6 @@ def handle_process():
         if not pdf_base_sanitized:
             pdf_base_sanitized = "file"
         temp_pdf_path = session_upload_dir / filename_sanitized
-        zip_filename = f"{pdf_base_sanitized}_output.zip"
-        zip_output_path = session_output_dir / zip_filename
-        individual_output_dir = session_output_dir / pdf_base_sanitized
-
         try:
             print(f"업로드된 파일을 임시로 저장 중: {temp_pdf_path}")
             file.save(temp_pdf_path)
@@ -360,8 +356,32 @@ def handle_process():
                 temp_pdf_path, api_key, openai_api_key, session_output_dir
             )
 
+            # ZIP 파일명과 경로를 실제 처리된 기본명으로 설정
+            zip_filename = f"{processed_pdf_base}_output.zip"
+            zip_output_path = session_output_dir / zip_filename
+            individual_output_dir = session_output_dir / processed_pdf_base
+
             # ZIP 생성 (개별 출력 디렉토리 사용)
-            create_zip_archive(individual_output_dir, zip_output_path)
+            if individual_output_dir.exists():
+                print(f"ZIP 생성 시작: {zip_output_path}")
+                print(f"소스 디렉토리: {individual_output_dir}")
+                zip_success = create_zip_archive(individual_output_dir, zip_output_path)
+                if not zip_success:
+                    print(f"오류: ZIP 파일 생성 실패 - {original_filename}")
+                    processing_errors.append(f"{original_filename}: ZIP 생성 실패")
+                    continue
+                
+                # ZIP 파일 유효성 검증
+                if not zip_output_path.exists() or zip_output_path.stat().st_size == 0:
+                    print(f"오류: ZIP 파일이 비어있거나 생성되지 않음 - {zip_output_path}")
+                    processing_errors.append(f"{original_filename}: 빈 ZIP 파일")
+                    continue
+                else:
+                    print(f"ZIP 파일 생성 성공: {zip_output_path} (크기: {zip_output_path.stat().st_size} bytes)")
+            else:
+                print(f"오류: 개별 출력 디렉토리가 존재하지 않음: {individual_output_dir}")
+                processing_errors.append(f"{original_filename}: 출력 디렉토리 없음")
+                continue
 
             download_url = url_for('download_file', session_id=session_id, filename=zip_filename, _external=True)
 
@@ -437,25 +457,40 @@ def download_file(session_id, filename):
     directory = OUTPUT_FOLDER / safe_session_id
     file_path = directory / safe_filename
 
-    # 파일 존재 여부 확인 및 로깅
+    # 자세한 디버깅 정보
     print(f"다운로드 요청: {file_path}")
-    print(f"파일 존재 여부: {file_path.exists()}")
-    print(f"디렉토리 존재 여부: {directory.exists()}")
+    print(f"세션 ID: {session_id} -> {safe_session_id}")
+    print(f"파일명: {filename} -> {safe_filename}")
+    print(f"디렉토리: {directory} (존재: {directory.exists()})")
+    print(f"파일 경로: {file_path} (존재: {file_path.exists()})")
+    
+    if directory.exists():
+        print(f"디렉토리 내용:")
+        for item in directory.iterdir():
+            print(f"  - {item.name} ({'파일' if item.is_file() else '디렉토리'}, 크기: {item.stat().st_size if item.is_file() else 'N/A'})")
 
+    # 보안 검사
     if not str(file_path.resolve()).startswith(str(OUTPUT_FOLDER.resolve())):
         print("보안 검사 실패: 유효하지 않은 경로")
-        return "유효하지 않은 경로", 400
+        return jsonify({"error": "유효하지 않은 경로"}), 400
         
+    # 파일 존재 검사
     if not file_path.is_file():
         print(f"파일을 찾을 수 없음: {file_path}")
-        return "파일을 찾을 수 없음", 404
+        return jsonify({"error": "파일을 찾을 수 없음", "path": str(file_path)}), 404
+
+    # 파일 크기 검사
+    file_size = file_path.stat().st_size
+    if file_size == 0:
+        print(f"빈 파일: {file_path}")
+        return jsonify({"error": "빈 파일입니다"}), 400
 
     try:
-        print(f"다운로드용 ZIP 제공 중: {file_path}")
+        print(f"다운로드용 ZIP 제공 중: {file_path} (크기: {file_size} bytes)")
         return send_from_directory(str(directory), safe_filename, as_attachment=True)
     except Exception as e:
         print(f"다운로드 중 오류 발생: {str(e)}")
-        return f"다운로드 중 오류 발생: {str(e)}", 500
+        return jsonify({"error": f"다운로드 중 오류 발생: {str(e)}"}), 500
 
 if __name__ == '__main__':
      host = os.getenv('FLASK_HOST', '0.0.0.0')

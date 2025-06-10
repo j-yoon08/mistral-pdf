@@ -111,17 +111,41 @@
       </section>
       <!-- 오른쪽 -->
       <section class="flex-1 flex flex-col gap-8 min-w-0">
-        <div class="bg-white rounded-2xl shadow p-6 flex flex-col gap-2 min-w-0" id="results-area" style="display: none;">
-          <h2 class="font-bold text-blue-600 text-lg flex items-center gap-2 mb-2"><i class="fas fa-download"></i> 결과 다운로드</h2>
+        <div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col gap-4 min-w-0 border border-blue-100" id="results-area" style="display: none;">
+          <div class="flex items-center gap-3 pb-3 border-b border-blue-100">
+            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+              <i class="fas fa-download text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="font-bold text-gray-800 text-xl">변환 완료</h2>
+              <p class="text-gray-500 text-sm">변환된 파일을 다운로드하세요</p>
+            </div>
+          </div>
           <ul id="download-links" class="mt-2"></ul>
         </div>
-        <div class="bg-white rounded-2xl shadow p-6 flex flex-col gap-2 min-w-0" id="preview-area" style="display: none;">
-          <h2 class="font-bold text-blue-600 text-lg flex items-center gap-2 mb-2"><i class="fas fa-eye"></i> 미리보기</h2>
+        <div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col gap-4 min-w-0 border border-blue-100" id="preview-area" style="display: none;">
+          <div class="flex items-center gap-3 pb-3 border-b border-blue-100">
+            <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center">
+              <i class="fas fa-eye text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="font-bold text-gray-800 text-xl">미리보기</h2>
+              <p class="text-gray-500 text-sm">변환 결과를 미리 확인하세요</p>
+            </div>
+          </div>
           <div id="preview-content" class="mt-2"></div>
         </div>
-        <div class="bg-white rounded-2xl shadow p-6 flex flex-col gap-2 min-w-0" id="error-area" style="display: none;">
-          <h2 class="font-bold text-red-500 text-lg flex items-center gap-2 mb-2"><i class="fas fa-exclamation-circle"></i> 오류</h2>
-          <pre id="error-message" class="bg-gray-50 rounded-lg p-4 text-red-500 text-base overflow-x-auto"></pre>
+        <div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col gap-4 min-w-0 border border-red-100" id="error-area" style="display: none;">
+          <div class="flex items-center gap-3 pb-3 border-b border-red-100">
+            <div class="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
+              <i class="fas fa-exclamation-circle text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="font-bold text-gray-800 text-xl">오류 발생</h2>
+              <p class="text-gray-500 text-sm">처리 중 문제가 발생했습니다</p>
+            </div>
+          </div>
+          <pre id="error-message" class="bg-red-50 rounded-lg p-4 text-red-600 text-base overflow-x-auto border border-red-200"></pre>
         </div>
       </section>
     </div>
